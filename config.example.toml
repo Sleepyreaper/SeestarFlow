@@ -1,0 +1,16 @@
+[paths]
+library = "library"
+
+[tools]
+# Leave a value empty when the executable is already on PATH.
+# Windows examples are shown; Linux/macOS users can use executable names.
+siril = "C:/Program Files/Siril/bin/siril-cli.exe"
+graxpert = "C:/Program Files/GraXpert/GraXpert.exe"
+rc_astro = "C:/Program Files/RC-Astro/CLI/rc-astro.exe"
+pixinsight = "C:/Program Files/PixInsight/bin/PixInsight.exe"
+
+[quality]
+min_stars = 18
+max_ellipticity = 0.52
+max_fwhm_ratio = 1.60
+max_background_ratio = 2.00

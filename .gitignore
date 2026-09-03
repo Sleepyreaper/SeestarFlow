@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Local configuration and acquired data
+config.toml
+library/
+datasets/
+test-data/
+comparison/
+tools/
+
+# Astronomical data and generated media never belong in this repository
+*.fit
+*.fits
+*.fts
+*.xisf
+*.tif
+*.tiff
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.ser
+*.cr2
+*.cr3
+*.nef
+*.arw
+
+# Logs, reports, caches, and local launchers
+*.log
+*.exe
+*.dll
+*.db
+*.sqlite
+*.sqlite3
+
+# Keep only portable production scripts. Local benchmark scripts contain
+# machine-specific paths and remain outside the public repository.
+scripts/*
+!scripts/SeestarFlow_Preprocess.ssf
+!scripts/SeestarFlow_DiagnosticPreview.ssf
+
+# Private trip/mission planning and local benchmark notes
+S50_Pro_Capture_Protocol.md
+Stephen_Foster_S50_Pro_Mission_Plan.md
+docs/TARGET_PLAN.md
+docs/TEST_DATA.md
+docs/FIELD_GUIDE.md
+docs/PREMIUM_BENCHMARK.md
+docs/PROCESSING.md
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,283 @@
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import os
+import re
+import shlex
+import shutil
+import sqlite3
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+from .fits import measure_quality, read_header, read_image
+
+
+FITS_EXTENSIONS = {".fit", ".fits", ".fts"}
+
+
+def slug(value: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9._-]+", "-", value.strip()).strip("-")
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _init_db(path: Path) -> sqlite3.Connection:
+    connection = sqlite3.connect(path)
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS sessions (
+          id TEXT PRIMARY KEY, target TEXT, site TEXT, filter_name TEXT,
+          mount TEXT, session_path TEXT, created_utc TEXT
+        );
+        CREATE TABLE IF NOT EXISTS frames (
+          hash TEXT PRIMARY KEY, session_id TEXT, filename TEXT, source TEXT,
+          date_obs TEXT, exposure REAL, temperature REAL, header_json TEXT,
+          FOREIGN KEY(session_id) REFERENCES sessions(id)
+        );
+        """
+    )
+    return connection
+
+
+def discover_frames(source: Path) -> list[Path]:
+    candidates = [p for p in source.rglob("*") if p.is_file() and p.suffix.lower() in FITS_EXTENSIONS]
+    subframes = [p for p in candidates if any(part.lower().endswith("_sub") for part in p.parts)]
+    return sorted(subframes or candidates)
+
+
+def ingest(source: Path, library: Path, target: str, site: str, filter_name: str, mount: str) -> Path:
+    frames = discover_frames(source)
+    if not frames:
+        raise ValueError(f"No FITS frames found below {source}")
+    first_header, _ = read_header(frames[0])
+    date = str(first_header.get("DATE-OBS", datetime.now().date().isoformat()))[:10]
+    session_id = "_".join(map(slug, (date, site, filter_name, mount)))
+    session = library / slug(target.upper()) / session_id
+    lights = session / "originals"
+    lights.mkdir(parents=True, exist_ok=True)
+    connection = _init_db(library / "catalog.db")
+    connection.execute(
+        "INSERT OR IGNORE INTO sessions VALUES (?,?,?,?,?,?,?)",
+        (session_id + "_" + slug(target.upper()), target.upper(), site, filter_name, mount, str(session), datetime.now(timezone.utc).isoformat()),
+    )
+    copied = []
+    for frame in frames:
+        header, _ = read_header(frame)
+        if int(header.get("STACKCNT", 1) or 1) > 1:
+            continue
+        digest = sha256(frame)
+        name = frame.name
+        destination = lights / name
+        if destination.exists() and sha256(destination) != digest:
+            destination = lights / f"{frame.stem}_{digest[:8]}{frame.suffix.lower()}"
+        if not destination.exists():
+            # Originals must be independent of the source device. A hard link
+            # here would allow a later source-side edit to alter the archive.
+            shutil.copy2(frame, destination)
+            if sha256(destination) != digest:
+                destination.unlink(missing_ok=True)
+                raise OSError(f"Hash verification failed while copying {frame}")
+        connection.execute(
+            "INSERT OR IGNORE INTO frames VALUES (?,?,?,?,?,?,?,?)",
+            (digest, session_id + "_" + slug(target.upper()), destination.name, str(frame), str(header.get("DATE-OBS", "")),
+             float(header.get("EXPTIME", 0) or 0), float(header.get("CCD-TEMP", 0) or 0), json.dumps(header, default=str)),
+        )
+        copied.append({"file": destination.name, "sha256": digest, "source": str(frame), "header": header})
+    connection.commit()
+    connection.close()
+    manifest = {
+        "schema": 1, "target": target.upper(), "site": site, "filter": filter_name, "mount": mount,
+        "session_id": session_id, "created_utc": datetime.now(timezone.utc).isoformat(), "frames": copied,
+    }
+    (session / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
+    return session
+
+
+def analyze(session: Path, thresholds: dict) -> list[dict]:
+    rows = []
+    for frame in sorted((session / "originals").iterdir()):
+        if frame.suffix.lower() not in FITS_EXTENSIONS:
+            continue
+        try:
+            _, image = read_image(frame)
+            quality = measure_quality(image)
+            row = {"filename": frame.name, **quality.serializable()}
+        except Exception as exc:
+            row = {"filename": frame.name, "background": 0, "noise_mad": 0, "star_count": 0,
+                   "fwhm_px": 99, "ellipticity": 1, "saturation_fraction": 1, "score": 0,
+                   "accepted": False, "reason": f"read-error: {exc}"}
+        rows.append(row)
+    valid = [r for r in rows if not str(r["reason"]).startswith("read-error")]
+    if valid:
+        med_fwhm = sorted(r["fwhm_px"] for r in valid)[len(valid) // 2]
+        med_bg = sorted(r["background"] for r in valid)[len(valid) // 2]
+        for row in valid:
+            reasons = []
+            if row["star_count"] < thresholds["min_stars"]: reasons.append("few-stars")
+            if row["ellipticity"] > thresholds["max_ellipticity"]: reasons.append("trailed")
+            if row["fwhm_px"] > med_fwhm * thresholds["max_fwhm_ratio"]: reasons.append("soft-focus")
+            if med_bg and row["background"] > med_bg * thresholds["max_background_ratio"]: reasons.append("bright-background")
+            row["score"] = round(100.0 * min(1.0, med_fwhm / max(row["fwhm_px"], 1e-6))
+                                 * max(0.0, 1.0 - row["ellipticity"]), 2)
+            row["accepted"] = not reasons
+            row["reason"] = ",".join(reasons)
+    fields = ["filename", "background", "noise_mad", "star_count", "fwhm_px", "ellipticity",
+              "saturation_fraction", "score", "accepted", "reason"]
+    with (session / "quality.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader(); writer.writerows(rows)
+    (session / "approved.lst").write_text("\n".join(r["filename"] for r in rows if r["accepted"]) + "\n", encoding="utf-8")
+    return rows
+
+
+def stage(session: Path) -> Path:
+    approved_path = session / "approved.lst"
+    if not approved_path.exists():
+        raise ValueError("Run analyze before stack")
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    work = session / "products" / run_id
+    lights = work / "lights"
+    lights.mkdir(parents=True)
+    for name in approved_path.read_text(encoding="utf-8").splitlines():
+        source = session / "originals" / name
+        destination = lights / name
+        try:
+            os.link(source, destination)
+        except OSError:
+            shutil.copy2(source, destination)
+    shutil.copy2(Path(__file__).resolve().parent / "assets" / "SeestarFlow_Preprocess.ssf", work)
+    return work
+
+
+def find_executable(configured: str, names: tuple[str, ...]) -> str | None:
+    if configured:
+        try:
+            if Path(configured).exists():
+                return configured
+        except OSError:
+            # A managed execution sandbox may block probing an otherwise valid
+            # per-user installation. The native user process can still run it.
+            if Path(configured).is_absolute():
+                return configured
+    for name in names:
+        found = shutil.which(name)
+        if found:
+            return found
+    return None
+
+
+def stack(session: Path, siril_path: str, dry_run: bool = False) -> tuple[Path, list[str]]:
+    work = stage(session)
+    executable = find_executable(siril_path, ("siril-cli.exe", "siril-cli", "siril.exe", "siril"))
+    command = [executable or "siril-cli", "-d", str(work), "-s", str(work / "SeestarFlow_Preprocess.ssf")]
+    if not dry_run:
+        if not executable:
+            raise FileNotFoundError("Siril was not found. Install it or set tools.siril in config.toml")
+        subprocess.run(command, check=True)
+        sequence = work / "process" / "r_pp_light_.seq"
+        registered = selected = None
+        if sequence.exists():
+            for line in sequence.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("S "):
+                    fields = shlex.split(line)
+                    if len(fields) >= 5:
+                        registered = int(fields[3])
+                        selected = int(fields[4])
+                    break
+        input_frames = sum(1 for path in (work / "lights").iterdir() if path.suffix.lower() in FITS_EXTENSIONS)
+        report = {
+            "schema": 1,
+            "input_frames": input_frames,
+            "registered_frames": registered,
+            "stacked_frames": selected,
+            "registration_yield": round(registered / input_frames, 4) if registered is not None and input_frames else None,
+            "stack_linear": str(work / "stack_linear.fit"),
+            "created_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        (work / "stack_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return work, command
+
+
+def linear_process(stack_path: Path, graxpert_path: str, dry_run: bool = False) -> tuple[Path, list[list[str]]]:
+    """Run background extraction followed by conservative linear denoising."""
+    executable = find_executable(graxpert_path, ("GraXpert.exe", "GraXpert-win64.exe", "graxpert"))
+    output_dir = stack_path.parent / "linear"
+    output_dir.mkdir(exist_ok=True)
+    gradient_stem = output_dir / "gradient_corrected"
+    denoised_stem = output_dir / "linear_denoised"
+    commands = [
+        [executable or "GraXpert", str(stack_path), "-cli", "-cmd", "background-extraction",
+         "-correction", "Subtraction", "-smoothing", "0.1", "-bg", "-output", str(gradient_stem)],
+        [executable or "GraXpert", str(gradient_stem.with_suffix(".fits")), "-cli", "-cmd", "denoising",
+         "-strength", "0.4", "-batch_size", "4", "-output", str(denoised_stem)],
+    ]
+    recipe = {
+        "schema": 1, "input": str(stack_path), "input_sha256": sha256(stack_path),
+        "stage": "linear", "commands": commands, "created_utc": datetime.now(timezone.utc).isoformat(),
+        "notes": "Inspect the saved background model before accepting this result.",
+    }
+    (output_dir / "recipe.json").write_text(json.dumps(recipe, indent=2), encoding="utf-8")
+    if not dry_run:
+        if not executable:
+            raise FileNotFoundError("GraXpert was not found. Install it or set tools.graxpert in config.toml")
+        for command in commands:
+            subprocess.run(command, check=True)
+    return output_dir, commands
+
+
+def premium_process(
+    linear_path: Path,
+    rc_astro_path: str,
+    kind: str,
+    star_separate: bool = False,
+    dry_run: bool = False,
+) -> tuple[Path, list[list[str]]]:
+    """Apply a conservative RC Astro linear workflow and record exact commands."""
+    executable = find_executable(rc_astro_path, ("rc-astro.exe", "rc-astro"))
+    output_dir = linear_path.parent / "rcastro"
+    output_dir.mkdir(exist_ok=True)
+    settings = {
+        "cluster": (0.30, 0.15),
+        "galaxy": (0.40, 0.65),
+        "nebula": (0.35, 0.55),
+    }
+    sharpen_stars, sharpen_nonstellar = settings[kind]
+    bxt = output_dir / "bxt_linear.fit"
+    nxt = output_dir / "bxt_nxt_linear.fit"
+    commands = [
+        [executable or "rc-astro", "bxt", str(linear_path), "--ss", str(sharpen_stars),
+         "--sn", str(sharpen_nonstellar), "--output", str(bxt), "--depth", "32F"],
+        [executable or "rc-astro", "nxt", str(bxt), "--dn", "0.60", "--iterations", "1",
+         "--output", str(nxt), "--depth", "32F"],
+    ]
+    if star_separate:
+        commands.append([
+            executable or "rc-astro", "sxt", str(nxt), "--stars", "--unscreen",
+            "--output", str(output_dir / "starless_linear.fit"), "--depth", "32F",
+        ])
+    recipe = {
+        "schema": 1,
+        "input": str(linear_path),
+        "input_sha256": sha256(linear_path),
+        "stage": "rcastro-linear",
+        "kind": kind,
+        "commands": commands,
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "notes": "BlurX and NoiseX are conservative defaults; inspect 100% crops before increasing strength.",
+    }
+    (output_dir / "recipe.json").write_text(json.dumps(recipe, indent=2), encoding="utf-8")
+    if not dry_run:
+        if not executable:
+            raise FileNotFoundError("RC Astro was not found. Install it or set tools.rc_astro in config.toml")
+        for command in commands:
+            subprocess.run(command, check=True)
+    return output_dir, commands

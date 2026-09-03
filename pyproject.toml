@@ -1,0 +1,22 @@
+[project]
+name = "seestarflow"
+version = "0.1.0"
+description = "Reproducible Seestar S50 Pro ingest, quality control, and stacking"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/Sleepyreaper/SeestarFlow"
+Issues = "https://github.com/Sleepyreaper/SeestarFlow/issues"
+
+[project.scripts]
+seestarflow = "seestarflow.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+seestarflow = ["assets/*.ssf"]

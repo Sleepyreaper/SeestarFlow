@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+# Reproducible Seestar light-only preprocessing for Siril 1.4+
+requires 1.4.0
+set32bits
+cd lights
+link light -out=../process
+cd ../process
+calibrate light -debayer
+register pp_light -2pass
+seqapplyreg pp_light -filter-round=2.5k -filter-fwhm=90%
+stack r_pp_light rej 3 3 -norm=addscale -output_norm -rgb_equal -out=result
+mirrorx_single result
+load result
+save ../stack_linear
+savetif ../stack_preview_16bit
+close

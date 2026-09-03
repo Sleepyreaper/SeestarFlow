@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+# Quick-look only: unlinked stretch makes defects easy to inspect but is not
+# the final color-calibrated artistic workflow.
+requires 1.4.0
+set32bits
+load linear_denoised
+autostretch -2.8 0.20
+savejpg diagnostic_preview 95
+close
