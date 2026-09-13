@@ -31,6 +31,7 @@ library = "D:/Astrophotography/SeestarLibrary"
 siril = "C:/Program Files/Siril/bin/siril-cli.exe"
 graxpert = "C:/Program Files/GraXpert/GraXpert.exe"
 rc_astro = ""
+photoshop = ""
 pixinsight = ""
 ```
 
@@ -41,20 +42,19 @@ python -m seestarflow doctor
 python -m pytest
 ```
 
-## 2. Add the optional paid stack
+## 2. Add the paid production stack
 
-Install PixInsight normally and activate its license. Then install the RC Astro
-modules through their supported PixInsight or standalone installation path.
-Configure `rc_astro` and `pixinsight` in `config.toml`, and run:
+Install and activate the RC Astro standalone CLI, Adobe Photoshop, and Lightroom.
+Configure `rc_astro` and `photoshop` in `config.toml`, and run:
 
 ```powershell
 python -m seestarflow doctor
 rc-astro license
 ```
 
-The standalone premium command expects RC Astro's CLI. PixInsight is currently
-used as the interactive or scripted finishing environment; SeestarFlow records
-the common linear handoff so PixInsight work can be reproduced separately.
+The premium command expects RC Astro's CLI. Photoshop receives 16-bit stretched
+starless, star, and reference layers; Lightroom catalogs only masters and
+release variants. PixInsight may remain blank or uninstalled.
 
 ## 3. Storage planning
 
@@ -70,6 +70,11 @@ Do not erase the telescope until:
 - hashes were written to `manifest.json`;
 - several archived FITS files open successfully;
 - a second backup exists for irreplaceable sessions.
+
+Estimate capacity with `python -m seestarflow storage --exposure 10 --hours 8`.
+The S50 Pro officially has 128 GB eMMC with about 100 GB available. An early
+measured telephoto FITS is 16,594,560 bytes, but use Monday's actual file size
+for final planning.
 
 ## Troubleshooting
 

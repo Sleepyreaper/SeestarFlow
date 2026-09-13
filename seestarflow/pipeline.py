@@ -54,7 +54,15 @@ def discover_frames(source: Path) -> list[Path]:
     return sorted(subframes or candidates)
 
 
-def ingest(source: Path, library: Path, target: str, site: str, filter_name: str, mount: str) -> Path:
+def ingest(
+    source: Path,
+    library: Path,
+    target: str,
+    site: str,
+    filter_name: str,
+    mount: str,
+    identity: dict | None = None,
+) -> Path:
     frames = discover_frames(source)
     if not frames:
         raise ValueError(f"No FITS frames found below {source}")
@@ -94,9 +102,14 @@ def ingest(source: Path, library: Path, target: str, site: str, filter_name: str
         copied.append({"file": destination.name, "sha256": digest, "source": str(frame), "header": header})
     connection.commit()
     connection.close()
+    public_identity = {
+        key: value for key, value in (identity or {}).items()
+        if key in {"creator", "copyright_notice", "public_contact"} and value
+    }
     manifest = {
-        "schema": 1, "target": target.upper(), "site": site, "filter": filter_name, "mount": mount,
+        "schema": 2, "target": target.upper(), "site": site, "filter": filter_name, "mount": mount,
         "session_id": session_id, "created_utc": datetime.now(timezone.utc).isoformat(), "frames": copied,
+        "identity": public_identity,
     }
     (session / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
     return session
@@ -207,8 +220,18 @@ def stack(session: Path, siril_path: str, dry_run: bool = False) -> tuple[Path, 
     return work, command
 
 
-def linear_process(stack_path: Path, graxpert_path: str, dry_run: bool = False) -> tuple[Path, list[list[str]]]:
-    """Run background extraction followed by conservative linear denoising."""
+def linear_process(
+    stack_path: Path,
+    graxpert_path: str,
+    grax_denoise: bool = False,
+    dry_run: bool = False,
+) -> tuple[Path, list[list[str]]]:
+    """Correct gradients and optionally denoise with GraXpert.
+
+    The paid branch normally leaves denoising disabled here so the same pixels
+    are not denoised again by NoiseXTerminator.  ``grax_denoise`` is intended
+    for the all-free branch.
+    """
     executable = find_executable(graxpert_path, ("GraXpert.exe", "GraXpert-win64.exe", "graxpert"))
     output_dir = stack_path.parent / "linear"
     output_dir.mkdir(exist_ok=True)
@@ -216,14 +239,19 @@ def linear_process(stack_path: Path, graxpert_path: str, dry_run: bool = False) 
     denoised_stem = output_dir / "linear_denoised"
     commands = [
         [executable or "GraXpert", str(stack_path), "-cli", "-cmd", "background-extraction",
-         "-correction", "Subtraction", "-smoothing", "0.1", "-bg", "-output", str(gradient_stem)],
-        [executable or "GraXpert", str(gradient_stem.with_suffix(".fits")), "-cli", "-cmd", "denoising",
-         "-strength", "0.4", "-batch_size", "4", "-output", str(denoised_stem)],
+         "-correction", "Subtraction", "-smoothing", "0.2", "-bg", "-output", str(gradient_stem)],
     ]
+    if grax_denoise:
+        commands.append(
+            [executable or "GraXpert", str(gradient_stem.with_suffix(".fits")), "-cli", "-cmd", "denoising",
+             "-strength", "0.4", "-batch_size", "4", "-output", str(denoised_stem)]
+        )
     recipe = {
         "schema": 1, "input": str(stack_path), "input_sha256": sha256(stack_path),
         "stage": "linear", "commands": commands, "created_utc": datetime.now(timezone.utc).isoformat(),
-        "notes": "Inspect the saved background model before accepting this result.",
+        "graxpert_denoise": grax_denoise,
+        "handoff": str((denoised_stem if grax_denoise else gradient_stem).with_suffix(".fits")),
+        "notes": "Inspect the saved background model before accepting this result. Do not use GraXpert denoise before NoiseXTerminator.",
     }
     (output_dir / "recipe.json").write_text(json.dumps(recipe, indent=2), encoding="utf-8")
     if not dry_run:
@@ -246,23 +274,25 @@ def premium_process(
     output_dir = linear_path.parent / "rcastro"
     output_dir.mkdir(exist_ok=True)
     settings = {
-        "cluster": (0.30, 0.15),
-        "galaxy": (0.40, 0.65),
-        "nebula": (0.35, 0.55),
+        # (sharpen stars, sharpen nonstellar, denoise). These are deliberately
+        # conservative S50 Pro starting points, not universal prescriptions.
+        "cluster": (0.12, 0.18, 0.35),
+        "galaxy": (0.20, 0.35, 0.45),
+        "nebula": (0.20, 0.32, 0.50),
     }
-    sharpen_stars, sharpen_nonstellar = settings[kind]
+    sharpen_stars, sharpen_nonstellar, denoise = settings[kind]
     bxt = output_dir / "bxt_linear.fit"
     nxt = output_dir / "bxt_nxt_linear.fit"
     commands = [
-        [executable or "rc-astro", "bxt", str(linear_path), "--ss", str(sharpen_stars),
-         "--sn", str(sharpen_nonstellar), "--output", str(bxt), "--depth", "32F"],
-        [executable or "rc-astro", "nxt", str(bxt), "--dn", "0.60", "--iterations", "1",
-         "--output", str(nxt), "--depth", "32F"],
+        [executable or "rc-astro", "bxt", str(linear_path), "-o", str(bxt),
+         "--sharpen-stars", str(sharpen_stars), "--sharpen-nonstellar", str(sharpen_nonstellar)],
+        [executable or "rc-astro", "nxt", str(bxt), "-o", str(nxt),
+         "--denoise", str(denoise), "--iterations", "1"],
     ]
     if star_separate:
         commands.append([
-            executable or "rc-astro", "sxt", str(nxt), "--stars", "--unscreen",
-            "--output", str(output_dir / "starless_linear.fit"), "--depth", "32F",
+            executable or "rc-astro", "sxt", str(nxt), "-o", str(output_dir / "starless_linear.fit"),
+            "--stars",
         ])
     recipe = {
         "schema": 1,
@@ -281,3 +311,70 @@ def premium_process(
         for command in commands:
             subprocess.run(command, check=True)
     return output_dir, commands
+
+
+def estimate_storage(
+    exposure_seconds: float,
+    hours: float,
+    frame_bytes: int = 16_594_560,
+    working_overhead: float = 1.25,
+) -> dict:
+    """Estimate continuous S50 Pro telephoto FITS storage.
+
+    ``frame_bytes`` is the measured size of an early 2160 x 3840 S50 Pro
+    telephoto FITS subframe. Monday's commissioning run should replace it with
+    the size actually produced by the owner's firmware and capture mode.
+    """
+    if exposure_seconds <= 0 or hours <= 0 or frame_bytes <= 0 or working_overhead < 1:
+        raise ValueError("exposure, hours, frame bytes, and overhead must be positive; overhead must be >= 1")
+    frames = int(hours * 3600 // exposure_seconds)
+    raw_bytes = frames * frame_bytes
+    return {
+        "exposure_seconds": exposure_seconds,
+        "hours": hours,
+        "frames": frames,
+        "frame_bytes": frame_bytes,
+        "raw_gb": round(raw_bytes / 1_000_000_000, 2),
+        "raw_gib": round(raw_bytes / 1024**3, 2),
+        "recommended_free_gb": round(raw_bytes * working_overhead / 1_000_000_000, 2),
+        "working_overhead": working_overhead,
+        "assumption": "continuous telephoto FITS capture; excludes rejected-frame gaps, wide-camera data, previews, and video",
+    }
+
+
+def record_release(
+    file_path: Path,
+    manifest_path: Path,
+    target: str,
+    variant: str,
+    destination: str = "",
+    notes: str = "",
+    identity: dict | None = None,
+) -> dict:
+    """Append an immutable-file fingerprint to a JSONL release ledger."""
+    if not file_path.is_file():
+        raise FileNotFoundError(file_path)
+    allowed = {"proof", "portfolio", "print", "archive"}
+    if variant not in allowed:
+        raise ValueError(f"variant must be one of {sorted(allowed)}")
+    public_identity = {
+        key: value for key, value in (identity or {}).items()
+        if key in {"creator", "copyright_notice", "public_contact"} and value
+    }
+    entry = {
+        "schema": 1,
+        "recorded_utc": datetime.now(timezone.utc).isoformat(),
+        "target": target.upper(),
+        "variant": variant,
+        "filename": file_path.name,
+        "path": str(file_path.resolve()),
+        "bytes": file_path.stat().st_size,
+        "sha256": sha256(file_path),
+        "destination": destination,
+        "notes": notes,
+        "identity": public_identity,
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with manifest_path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return entry

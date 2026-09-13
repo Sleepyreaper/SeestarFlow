@@ -46,6 +46,7 @@ tools/
 scripts/*
 !scripts/SeestarFlow_Preprocess.ssf
 !scripts/SeestarFlow_DiagnosticPreview.ssf
+!scripts/SeestarFlow_LayeredFinish.jsx
 
 # Private trip/mission planning and local benchmark notes
 S50_Pro_Capture_Protocol.md

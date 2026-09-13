@@ -16,7 +16,7 @@ camera/removable source
   -> Siril registration/integration
   -> common linear master
        -> free branch
-       -> paid branch
+       -> production branch (RC Astro -> Siril -> Photoshop -> Lightroom)
 ```
 
 ## Archive layout
@@ -38,6 +38,7 @@ library/
           stack_report.json  registration yield and counts
           linear/            gradient/denoise products and recipe.json
           rcastro/           optional premium products and recipe.json
+          photoshop/         layered PSD and release-ready TIFF/JPEG products
 ```
 
 `config.toml`, `library/`, raw FITS files, and all generated media are ignored by

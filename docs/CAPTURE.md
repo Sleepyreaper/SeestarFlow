@@ -33,6 +33,7 @@ dominates read noise.
 | 500 accepted frames | Total integration | Typical role |
 | --- | ---: | --- |
 | 10 seconds | 1 h 23 m 20 s | bright cores, imperfect tracking, HDR stars |
+| 20 seconds | 2 h 46 m 40 s | middle ground when 30s keeper rate is weak |
 | 30 seconds | 4 h 10 m | default EQ workhorse |
 | 60 seconds | 8 h 20 m | faint signal under dark, stable EQ conditions |
 
@@ -41,6 +42,27 @@ gust, cloud, satellite, tracking error, or saturated star. Test rather than
 guess: capture 30 frames at each available duration with identical framing and
 filter, then compare keeper rate, FWHM, ellipticity, background, saturation, and
 signal-to-noise per minute.
+
+The official S50 Pro exposure menu adds 60 seconds only in EQ mode. Longer is
+not automatically better: one failed 60-second sub loses six times the photons
+of a failed 10-second sub. Compare accepted integration per clock hour.
+
+## Storage
+
+The S50 Pro is 128 GB with approximately 100 GB usable. One early real
+2160-by-3840 telephoto FITS measured 16,594,560 bytes. Under the deliberately
+conservative assumption of continuous capture at the same size:
+
+| Exposure | Approximate raw storage per hour | Eight-hour raw total |
+| --- | ---: | ---: |
+| 10s | 5.97 GB | 47.8 GB |
+| 20s | 2.99 GB | 23.9 GB |
+| 30s | 1.99 GB | 15.9 GB |
+| 60s | 1.00 GB | 8.0 GB |
+
+These are planning numbers, not yet measurements of the owner's firmware and
+wide-camera modes. Use `seestarflow storage` with the actual Monday file size.
+Copy off and back up after every serious night.
 
 ## Multiple nights
 

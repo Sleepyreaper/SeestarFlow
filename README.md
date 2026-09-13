@@ -3,7 +3,7 @@
 SeestarFlow is a reproducible, non-generative workflow for turning individual
 ZWO Seestar FITS subframes into auditable deep-sky masters. It preserves the raw
 files, measures every frame, rejects weak data, stacks with Siril, and records
-the commands used by both a free processing branch and an optional paid branch.
+the commands used by both a free processing branch and the production branch.
 
 The project was built around the Seestar S50 Pro, but the ingest and quality
 stages work with conventional FITS light frames as well.
@@ -24,9 +24,10 @@ flowchart LR
     D -->|rejected| F[CSV audit trail]
     E --> G[Identical linear master]
     G --> H[Free: GraXpert + Siril]
-    G --> I[Paid: PixInsight + RC Astro]
+    G --> I[Production: GraXpert + RC Astro]
     H --> J[TIFF/JPEG + recipe]
-    I --> J
+    I --> K[Siril + layered Photoshop finish]
+    K --> J
 ```
 
 No AI image generation, painted nebulosity, or replacement sky is part of the
@@ -39,13 +40,14 @@ checked against the source data.
 | Stage | Free stack | Paid stack |
 | --- | --- | --- |
 | Raw archive and QA | SeestarFlow | SeestarFlow |
-| Registration/integration | Siril | Siril or PixInsight WBPP |
+| Registration/integration | Siril | Siril |
 | Gradient correction | GraXpert | GraXpert, ABE, or DBE |
-| Color | Siril PCC/SPCC tools | PixInsight SPCC/narrowband mapping |
+| Color | Siril | Siril plus Photoshop adjustment layers |
 | Optical correction | Siril deconvolution | BlurXTerminator |
 | Noise reduction | GraXpert | NoiseXTerminator or GraXpert |
 | Star separation | StarNet/Siril when suitable | StarXTerminator when suitable |
-| Stretch and finish | Siril | PixInsight masks, curves, PixelMath |
+| Stretch and finish | Siril | Siril plus a layered 16-bit Photoshop master |
+| Catalog/release | File system | Lightroom, metadata, output pixels, print soft proof |
 
 Both branches must start from the same linear master when comparing software.
 The paid branch only wins when it improves credible detail, stellar profiles, or
@@ -58,7 +60,8 @@ Requirements:
 - Python 3.11+
 - Siril 1.4+
 - GraXpert for the free linear-processing branch
-- Optional: PixInsight and RC Astro tools for the paid branch
+- Optional paid production tools: RC Astro, Photoshop, and Lightroom
+- PixInsight only for future advanced workflows; it is not required here
 
 ```powershell
 git clone https://github.com/Sleepyreaper/SeestarFlow.git
@@ -98,15 +101,41 @@ python -m seestarflow premium `
 Use `--dry-run` on `stack`, `linear`, or `premium` to inspect generated commands
 without launching external software.
 
+Use `--grax-denoise` only for the free branch. The production branch runs
+GraXpert background extraction without denoising, then uses NoiseXTerminator
+once. It never stacks two learned denoisers merely because both are installed.
+
+Estimate raw FITS storage before a long plan:
+
+```powershell
+python -m seestarflow storage --exposure 10 --hours 8
+```
+
+The default frame size is an early measured S50 Pro telephoto sub. Replace it
+with Monday's measured size using `--frame-bytes`.
+
+Hash a final proof, portfolio, print, or archive export into the private release
+ledger:
+
+```powershell
+python -m seestarflow release --file "D:/Astro/M27-portfolio-v01.jpg" --target M27 --variant portfolio
+```
+
 ## Repository map
 
 - `seestarflow/` — ingest, FITS parsing, quality measurement, orchestration
-- `scripts/` — portable Siril production and diagnostic scripts
+- `scripts/` — portable Siril scripts and Photoshop layered-master builder
 - `docs/ARCHITECTURE.md` — data model and processing boundaries
 - `docs/INSTALL_WINDOWS.md` — complete Windows setup
 - `docs/CAPTURE.md` — how to acquire processable Seestar data
 - `docs/FREE_VS_PAID.md` — fair comparison and tool roles
 - `docs/BENCHMARKING.md` — test methodology and failure criteria
+- `docs/PRODUCTION_WORKFLOW.md` — the 30-step public workflow and quality gates
+- `docs/PROCESSING_RECIPES.md` — target-class settings for the installed stack
+- `docs/FIRST_NIGHT_RUNBOOK.md` — exact delivery-day and Monday execution plan
+- `docs/IP_AND_RELEASE.md` — provenance, privacy, metadata, and releases
+- `docs/EQUIPMENT_AND_STORAGE.md` — what is required now and before travel
+- `docs/workflow-sheet.example.json` — stage-sheet spec for public process graphics
 - `tests/` — synthetic FITS and pipeline tests; no astronomy data required
 
 Raw data, integrated masters, previews, and finished images are intentionally

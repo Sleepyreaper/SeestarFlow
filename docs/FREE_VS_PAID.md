@@ -32,24 +32,25 @@ Siril integration
 This branch can produce excellent work. Its strengths are automation, low cost,
 scriptability, and a clear path from subframes to final export.
 
-## Paid branch
+## Paid production branch
 
 ```text
 same linear master
-  -> PixInsight background/color tools
+  -> GraXpert background extraction (no denoise)
   -> BlurXTerminator while linear
-  -> NoiseXTerminator or GraXpert while linear
+  -> NoiseXTerminator once while linear
   -> optional StarXTerminator
-  -> masks / GHS or HistogramTransformation
+  -> Siril stretch and color preparation
   -> separate star and object treatment when justified
-  -> PixelMath recombination
+  -> layered Photoshop recombination and local finish
+  -> Lightroom catalog, release variants, and print soft proof
   -> TIFF + JPEG
 ```
 
-PixInsight's advantage is not one magic filter. It is control: repeatable process
-icons and scripts, masks, image containers, LocalNormalization, sophisticated
-color workflows, HDR composition, PixelMath, and exact management of intermediate
-linear products.
+This is the stack already purchased and proven on the IC 1396A benchmark. It is
+complete without PixInsight. PixInsight remains a possible future specialist
+tool for LocalNormalization, complex mosaics, HDR/channel composition, image
+containers, and PixelMath—not a prerequisite for excellent S50 Pro work.
 
 RC Astro tools add astronomy-specific learned correction:
 
@@ -61,14 +62,11 @@ Treat their output as a hypothesis that must survive visual inspection. On dense
 undersampled star fields, separation can leave soft aureoles or false residuals.
 If the stars-intact result is more credible, keep it.
 
-## Recommended purchase order
+## Purchase decision
 
-1. Learn the free stack and obtain reliable capture data.
-2. Add PixInsight when masks, multi-night management, HDR, and reproducibility
-   become the limitation.
-3. Trial BlurXTerminator on the same linear masters.
-4. Add NoiseXTerminator or StarXTerminator only when matched tests show a useful
-   improvement over GraXpert and the free separation options.
+The production software is already purchased: Siril, GraXpert, RC Astro,
+Photoshop, and Lightroom. Do not buy more software for Monday. Add PixInsight
+only when a documented limitation—not curiosity—survives three real projects.
 
 Prices and bundles change; this repository intentionally does not hardcode them.
 

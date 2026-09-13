@@ -7,7 +7,14 @@ library = "library"
 siril = "C:/Program Files/Siril/bin/siril-cli.exe"
 graxpert = "C:/Program Files/GraXpert/GraXpert.exe"
 rc_astro = "C:/Program Files/RC-Astro/CLI/rc-astro.exe"
-pixinsight = "C:/Program Files/PixInsight/bin/PixInsight.exe"
+photoshop = "C:/Program Files/Adobe/Adobe Photoshop 2026/Photoshop.exe"
+pixinsight = ""
+
+[identity]
+# Stored only in local config.toml and copied into private manifests.
+creator = ""
+copyright_notice = ""
+public_contact = ""
 
 [quality]
 min_stars = 18
