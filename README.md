@@ -41,11 +41,12 @@ checked against the source data.
 | --- | --- | --- |
 | Raw archive and QA | SeestarFlow | SeestarFlow |
 | Registration/integration | Siril | Siril |
-| Gradient correction | GraXpert | GraXpert, ABE, or DBE |
+| Gradient correction | GraXpert | GraXpert, or GradientXTerminator as an alternative |
 | Color | Siril | Siril plus Photoshop adjustment layers |
-| Optical correction | Siril deconvolution | BlurXTerminator |
-| Noise reduction | GraXpert | NoiseXTerminator or GraXpert |
+| Optical correction | Siril deconvolution when justified | No deconvolution tool is assumed |
+| Noise reduction | GraXpert | NoiseXTerminator once |
 | Star separation | StarNet/Siril when suitable | StarXTerminator when suitable |
+| Star control | Siril/manual masks | StarShrink only when stars overwhelm the subject |
 | Stretch and finish | Siril | Siril plus a layered 16-bit Photoshop master |
 | Catalog/release | File system | Lightroom, metadata, output pixels, print soft proof |
 
@@ -89,7 +90,8 @@ python -m seestarflow stack --session ".\library\M31\<session>"
 python -m seestarflow linear --stack ".\library\M31\<session>\products\<run>\stack_linear.fit"
 ```
 
-Optional RC Astro processing:
+Optional RC Astro CLI preprocessing with the two licensed tools that support
+linear FITS (`NoiseXTerminator` and `StarXTerminator`):
 
 ```powershell
 python -m seestarflow premium `
@@ -104,6 +106,10 @@ without launching external software.
 Use `--grax-denoise` only for the free branch. The production branch runs
 GraXpert background extraction without denoising, then uses NoiseXTerminator
 once. It never stacks two learned denoisers merely because both are installed.
+
+GradientXTerminator and StarShrink are Photoshop plug-ins. They are decision
+gates in the finishing workflow, not CLI stages. BlurXTerminator is a separate
+license and is intentionally not assumed by this repository.
 
 Estimate raw FITS storage before a long plan:
 
@@ -126,13 +132,19 @@ python -m seestarflow release --file "D:/Astro/M27-portfolio-v01.jpg" --target M
 - `seestarflow/` — ingest, FITS parsing, quality measurement, orchestration
 - `scripts/` — portable Siril scripts and Photoshop layered-master builder
 - `docs/ARCHITECTURE.md` — data model and processing boundaries
+- `docs/OPERATING_PLAYBOOK.md` — canonical end-to-end process and tool decisions
+- `docs/APP_FIELD_CARD.md` — literal Seestar app settings and target/filter rules
 - `docs/INSTALL_WINDOWS.md` — complete Windows setup
 - `docs/CAPTURE.md` — how to acquire processable Seestar data
 - `docs/FREE_VS_PAID.md` — fair comparison and tool roles
 - `docs/BENCHMARKING.md` — test methodology and failure criteria
+- `docs/DATASET_TEST_MATRIX.md` — which external datasets are valid proxies,
+  what has been tested, and which missing test is worth acquiring next
+- `docs/EQ_EXPOSURE_TEST.md` — timed EQ/Alt-Az and 10/30/60s experiments,
+  with the `capture-compare` command for audited equal-integration selections
 - `docs/PRODUCTION_WORKFLOW.md` — the 30-step public workflow and quality gates
 - `docs/PROCESSING_RECIPES.md` — target-class settings for the installed stack
-- `docs/FIRST_NIGHT_RUNBOOK.md` — exact delivery-day and Monday execution plan
+- `docs/FIRST_NIGHT_RUNBOOK.md` — historical commissioning runbook
 - `docs/IP_AND_RELEASE.md` — provenance, privacy, metadata, and releases
 - `docs/EQUIPMENT_AND_STORAGE.md` — what is required now and before travel
 - `docs/workflow-sheet.example.json` — stage-sheet spec for public process graphics

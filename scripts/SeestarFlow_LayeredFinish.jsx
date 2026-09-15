@@ -48,6 +48,8 @@
             referenceLayer.visible = false;
         }
 
+        var starControl = master.layerSets.add();
+        starControl.name = "STAR CONTROL — optional masked StarShrink / opacity";
         var localContrast = master.layerSets.add();
         localContrast.name = "LOCAL CONTRAST — add masked layers here";
         var finalColor = master.layerSets.add();

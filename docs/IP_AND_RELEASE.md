@@ -70,9 +70,10 @@ files remain the source of truth.
 Suggested processing disclosure:
 
 > Captured by the artist with a Seestar S50 Pro. Registered and integrated in
-> Siril; gradient corrected in GraXpert; astronomy-specific deconvolution,
-> denoising, and optional star separation with RC Astro; tone and color finished
-> in Siril and Adobe Photoshop. No generative content or replacement sky.
+> Siril; background corrected in GraXpert or GradientXTerminator; denoised once
+> with NoiseXTerminator; optional star separation and star-size control used
+> where disclosed; tone and color finished in Siril and Adobe Photoshop. No
+> generative content or replacement sky.
 
 ## Release variants
 

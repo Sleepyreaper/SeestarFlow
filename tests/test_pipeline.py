@@ -66,10 +66,15 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(grax_commands[0][4], "background-extraction")
 
             _, paid_commands = premium_process(stack, "", "nebula", star_separate=True, dry_run=True)
-            self.assertIn("--sharpen-stars", paid_commands[0])
-            self.assertIn("--sharpen-nonstellar", paid_commands[0])
-            self.assertIn("--denoise", paid_commands[1])
-            self.assertNotIn("--unscreen", paid_commands[2])
+            self.assertEqual(paid_commands[0][1], "sxt")
+            self.assertIn("--stars", paid_commands[0])
+            self.assertIn("--unscreen=false", paid_commands[0])
+            self.assertEqual(paid_commands[1][1], "nxt")
+            self.assertFalse(any("bxt" in part.lower() for command in paid_commands for part in command))
+
+            _, cluster_commands = premium_process(stack, "", "cluster", star_separate=False, dry_run=True)
+            self.assertEqual(len(cluster_commands), 1)
+            self.assertEqual(cluster_commands[0][1], "nxt")
 
     def test_free_branch_can_request_graxpert_denoise(self):
         with tempfile.TemporaryDirectory() as temp:

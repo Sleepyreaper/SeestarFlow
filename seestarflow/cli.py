@@ -17,6 +17,7 @@ from .pipeline import (
     stack,
 )
 from .workflow_sheet import build_workflow_sheet
+from .capture_compare import compare_captures
 
 
 def parser() -> argparse.ArgumentParser:
@@ -24,6 +25,9 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--config", type=Path, default=ROOT / "config.toml")
     commands = root.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
+    compare = commands.add_parser("capture-compare")
+    compare.add_argument("--spec", type=Path, required=True)
+    compare.add_argument("--output", type=Path, required=True)
     add = commands.add_parser("ingest")
     add.add_argument("--source", type=Path, required=True)
     add.add_argument("--target", required=True)
@@ -42,7 +46,10 @@ def parser() -> argparse.ArgumentParser:
         help="Use GraXpert denoise for the free branch; leave off before NoiseXTerminator",
     )
     linear.add_argument("--dry-run", action="store_true")
-    premium = commands.add_parser("premium")
+    premium = commands.add_parser(
+        "premium",
+        help="Run licensed NXT once and optional early SXT; Photoshop GXT/StarShrink remain manual gates",
+    )
     premium.add_argument("--linear", type=Path, required=True)
     premium.add_argument("--kind", choices=("cluster", "galaxy", "nebula"), required=True)
     premium.add_argument("--star-separate", action="store_true")
@@ -68,6 +75,10 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     config = load_config(args.config)
+    if args.command == "capture-compare":
+        report = compare_captures(args.spec.resolve(), args.output.resolve())
+        print(json.dumps({key: value for key, value in report.items() if key != "selections"}, indent=2))
+        return 0
     if args.command == "doctor":
         report = {
             "library": str(resolve_library(config)),

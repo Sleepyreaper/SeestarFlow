@@ -12,6 +12,7 @@ build/
 config.toml
 library/
 datasets/
+captures/
 test-data/
 comparison/
 tools/
@@ -56,6 +57,11 @@ docs/TEST_DATA.md
 docs/FIELD_GUIDE.md
 docs/PREMIUM_BENCHMARK.md
 docs/PROCESSING.md
+docs/All_Season_Class_C_RV_Research.docx
+docs/MONDAY_FIRST_LIGHT_AND_PAID_PIPELINE.md
+docs/NEXT_THREE_NIGHTS_FIELD_CARD.md
+docs/FIRST_LIGHT_2026-09-14.md
+deliverables/
 
 # Editors and operating systems
 .idea/

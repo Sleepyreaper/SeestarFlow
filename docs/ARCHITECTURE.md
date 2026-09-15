@@ -78,11 +78,12 @@ FITS master used as the comparison boundary for all downstream branches.
 
 ## Linear and nonlinear boundaries
 
-Gradient correction, color calibration, optical correction, and the strongest
-noise reduction should normally happen while data remain linear. Stretching,
-contrast, saturation, star emphasis, and presentation color are nonlinear and
-subjective. Keeping that boundary explicit makes alternative finishes cheap and
-prevents a display JPEG from becoming the accidental master.
+Gradient correction, color calibration, and the strongest noise reduction
+should normally happen while data remain linear. Star separation is most useful
+early when selected. Stretching, contrast, saturation, StarShrink, star
+emphasis, and presentation color are nonlinear and subjective. Keeping that
+boundary explicit makes alternative finishes cheap and prevents a display JPEG
+from becoming the accidental master.
 
 ## External tools
 
@@ -90,6 +91,11 @@ SeestarFlow orchestrates external applications; it does not copy or embed their
 code or models. Exact commands and input hashes are written to `recipe.json`.
 Licenses, model downloads, GPU choice, and application updates remain the user's
 responsibility.
+
+The automated production branch uses the licensed stand-alone
+NoiseXTerminator, plus optional StarXTerminator. GradientXTerminator and
+StarShrink remain Photoshop decision gates. No BlurXTerminator license is
+assumed.
 
 ## Safety properties
 

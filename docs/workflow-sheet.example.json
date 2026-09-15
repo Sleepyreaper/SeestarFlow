@@ -9,8 +9,8 @@
   "stages": [
     {"step": 1, "label": "Siril stack", "detail": "Approved FITS only", "image": "stages/01-stack.jpg"},
     {"step": 2, "label": "Gradient removal", "detail": "GraXpert subtraction", "image": "stages/02-gradient.jpg"},
-    {"step": 3, "label": "Optical correction", "detail": "BlurXTerminator", "image": "stages/03-bxt.jpg"},
-    {"step": 4, "label": "Noise reduction", "detail": "NoiseXTerminator", "image": "stages/04-nxt.jpg"},
+    {"step": 3, "label": "Background", "detail": "GraXpert or GradientXTerminator", "image": "stages/03-gradient.jpg"},
+    {"step": 4, "label": "Noise reduction", "detail": "NoiseXTerminator once", "image": "stages/04-nxt.jpg"},
     {"step": 5, "label": "Star separation", "detail": "Optional StarXTerminator", "image": "stages/05-starless.jpg"},
     {"step": 6, "label": "Object stretch", "detail": "Siril starless stretch", "image": "stages/06-object.jpg"},
     {"step": 7, "label": "Star stretch", "detail": "Independent star control", "image": "stages/07-stars.jpg"},

@@ -10,12 +10,12 @@ sampling, and field density decide how much processing an image can tolerate.
 individual FITS
   -> SeestarFlow ingest / hash / QA
   -> Siril registration + integration
-  -> GraXpert background extraction only
-  -> RC Astro BlurXTerminator
+  -> GraXpert background extraction OR GradientXTerminator
   -> RC Astro NoiseXTerminator (one denoise stage)
   -> optional RC Astro StarXTerminator
   -> Siril independent stretches and color preparation
   -> Photoshop layered recombination and local finish
+  -> optional masked StarShrink
   -> Lightroom catalog, keywords, output variants, and print soft proof
 ```
 
@@ -24,15 +24,18 @@ LocalNormalization, complex mosaics, advanced narrowband channel work, and
 repeatable process containers. It does not need to be installed for this
 production branch.
 
-## Linear defaults
+The owned RC Astro bundle contains GradientXTerminator, NoiseXTerminator,
+StarXTerminator, and StarShrink. BlurXTerminator is not assumed.
 
-| Target class | Filter | GraXpert | BXT stars / nonstellar | NXT | SXT | Notes |
+## Target-class defaults
+
+| Target class | Filter | Gradient owner | NXT | SXT | StarShrink | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Emission nebula | Dual-band in bright sky; either at dark site | Subtraction, smoothing 0.20 | 0.20 / 0.32 | 0.50, one pass | Usually | Stretch starless first; return stars around 55–75% visual strength |
-| Galaxy | Broadband | Subtraction, smoothing 0.15–0.20 | 0.20 / 0.35 | 0.45, one pass | Sometimes | Protect core and star-forming knots; avoid waxy dust lanes |
-| Open/globular cluster | Broadband | Subtraction, smoothing 0.15–0.20 | 0.12 / 0.18 | 0.35, one pass | Rarely | The stars are the subject; do not force a starless workflow |
-| Reflection/dark nebula | Broadband, dark site | Very cautious subtraction | 0.18 / 0.28 | 0.40–0.45 | Sometimes | A background model can accidentally remove real faint dust |
-| Wide Milky Way | Broadband, dark site | Only if model is clearly credible | Off or extremely mild | 0.30–0.40 | No | Correct distortion and reject aircraft/satellite trails; retain natural star field |
+| Emission nebula | Dual-band in bright sky; either at dark site | GraXpert subtraction by default | Moderate, once | Usually | Sometimes | Stretch starless first; return stars around 55–75% visual strength |
+| Galaxy | Broadband | GraXpert or selected GXT pass | Mild/moderate, once | Sometimes | Sometimes | Protect core, H-II knots, and tiny background galaxies |
+| Open/globular cluster | Broadband | Mild GraXpert or GXT | Mild, once | Rarely | No | The stars are the subject; keep natural color and profiles |
+| Reflection/dark nebula | Broadband, dark site | Very cautious or skip | Mild/moderate, once | Sometimes | Rarely | A background model can remove real faint dust |
+| Wide Milky Way | Broadband, dark site | Only with a credible model | Mild, once | No | No | Retain the natural star field and large-scale structure |
 
 Run the defaults through SeestarFlow:
 
@@ -61,29 +64,26 @@ change samples, crop unstable borders first, or skip extraction.
 GraXpert documents its command-line background extraction and saved background
 model in the [official project](https://github.com/Steffenhir/GraXpert/).
 
-## Gate 2: BlurXTerminator
-
-Judge at 100% and 50%, not fit-to-screen only. Compare:
-
-- small and large stars in all four corners;
-- a bright-star halo near the target;
-- the faintest real filament or dust lane visible before correction;
-- the galaxy/nebula core.
-
-Back off if stars acquire black rims, tiny stars disappear, or the background
-develops rope-like detail. The number is a ceiling, not a target.
-
-## Gate 3: NoiseXTerminator
+## Gate 2: NoiseXTerminator
 
 One denoise stage only. Noise should become quieter while still looking random.
 Back off if the background becomes plastic, mottled, or visibly tiled. Do not
 judge a linear result only through an aggressive screen stretch.
 
-## Gate 4: star separation
+## Gate 3: StarXTerminator
 
 SXT is optional. Keep both the stars-intact and separated paths. Reject the
 separated version if bright stars leave dark holes, color rings, or smeared
-nebula residue. Dense clusters usually look better without separation.
+nebula residue. Dense clusters usually look better without separation. When
+separating linear data, leave Unscreen off and retain the original.
+
+## Gate 4: GradientXTerminator and StarShrink
+
+GradientXTerminator is the Photoshop alternative when GraXpert's model is not
+credible, or a conservative residual pass after the remaining gradient is
+proved. Protect the object and begin coarse/low-to-medium. StarShrink belongs
+near the end, after recombination, only when stars overwhelm a non-stellar
+subject. Mask feature stars and skip it for clusters.
 
 ## Photoshop master layers
 
@@ -94,6 +94,7 @@ OUTPUT CHECKS             (soft proof / gamut warning; normally hidden)
 SIGNATURE OR WATERMARK    (proof export only)
 FINAL COLOR               (adjustment layers; masked)
 LOCAL CONTRAST            (masked luminosity, restrained opacity)
+STAR CONTROL              (optional masked StarShrink)
 STARS                     (Screen/Linear Dodge as tested; independent opacity)
 STARLESS OBJECT           (main stretched object)
 BACKGROUND CONTROL        (masked curves/color, never clipped)

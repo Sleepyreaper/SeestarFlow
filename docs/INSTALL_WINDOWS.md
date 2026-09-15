@@ -44,7 +44,10 @@ python -m pytest
 
 ## 2. Add the paid production stack
 
-Install and activate the RC Astro standalone CLI, Adobe Photoshop, and Lightroom.
+Install and activate the RC Astro Photoshop Bundle (GradientXTerminator,
+NoiseXTerminator, StarXTerminator, and StarShrink), the RC Astro stand-alone
+CLI, Adobe Photoshop, and Lightroom. The NoiseXTerminator and StarXTerminator
+licenses also authorize those tools in the CLI; no second license is needed.
 Configure `rc_astro` and `photoshop` in `config.toml`, and run:
 
 ```powershell
@@ -54,7 +57,18 @@ rc-astro license
 
 The premium command expects RC Astro's CLI. Photoshop receives 16-bit stretched
 starless, star, and reference layers; Lightroom catalogs only masters and
-release variants. PixInsight may remain blank or uninstalled.
+release variants. GradientXTerminator and StarShrink are Photoshop-only stages
+in this workflow. BlurXTerminator is a separate license and is not required.
+PixInsight may remain blank or uninstalled.
+
+After activation, benchmark the installed CLI on the machine once:
+
+```powershell
+rc-astro nxt --benchmark-all
+```
+
+The selected compute device is shared across RC Astro CLI products. Re-run the
+benchmark after a major GPU/driver change, not before every image.
 
 ## 3. Storage planning
 

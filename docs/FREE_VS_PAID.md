@@ -37,26 +37,32 @@ scriptability, and a clear path from subframes to final export.
 ```text
 same linear master
   -> GraXpert background extraction (no denoise)
-  -> BlurXTerminator while linear
   -> NoiseXTerminator once while linear
   -> optional StarXTerminator
   -> Siril stretch and color preparation
   -> separate star and object treatment when justified
   -> layered Photoshop recombination and local finish
+  -> optional GradientXTerminator alternative/residual correction
+  -> optional masked StarShrink after recombination
   -> Lightroom catalog, release variants, and print soft proof
   -> TIFF + JPEG
 ```
 
-This is the stack already purchased and proven on the IC 1396A benchmark. It is
+This is the stack already purchased and exercised on benchmark data. It is
 complete without PixInsight. PixInsight remains a possible future specialist
 tool for LocalNormalization, complex mosaics, HDR/channel composition, image
 containers, and PixelMath—not a prerequisite for excellent S50 Pro work.
 
-RC Astro tools add astronomy-specific learned correction:
+The four licensed Photoshop tools have distinct jobs:
 
-- BlurXTerminator: optical deconvolution and stellar-profile correction.
 - NoiseXTerminator: learned noise reduction.
 - StarXTerminator: star/object separation.
+- GradientXTerminator: selected-background gradient correction in Photoshop;
+  use it instead of GraXpert, or as a conservative residual pass with evidence.
+- StarShrink: late star-size presentation control; optional and masked.
+
+NoiseXTerminator and StarXTerminator also work through RC Astro's stand-alone
+CLI. BlurXTerminator is a separate product and is deliberately not assumed.
 
 Treat their output as a hypothesis that must survive visual inspection. On dense,
 undersampled star fields, separation can leave soft aureoles or false residuals.
@@ -64,8 +70,9 @@ If the stars-intact result is more credible, keep it.
 
 ## Purchase decision
 
-The production software is already purchased: Siril, GraXpert, RC Astro,
-Photoshop, and Lightroom. Do not buy more software for Monday. Add PixInsight
+The production software is already purchased: Siril, GraXpert, the four-tool
+RC Astro Photoshop bundle, Photoshop, and Lightroom. Do not buy more software
+to complete this workflow. Add PixInsight
 only when a documented limitation—not curiosity—survives three real projects.
 
 Prices and bundles change; this repository intentionally does not hardcode them.

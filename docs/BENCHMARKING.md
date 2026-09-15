@@ -3,6 +3,11 @@
 Astrophotography comparisons are easy to bias. This protocol tests tools against
 the same photons and requires failures to remain visible.
 
+For changes in capture settings, use [EQ_EXPOSURE_TEST.md](EQ_EXPOSURE_TEST.md).
+That experiment separately compares equal clock time, equal final integration,
+and field coverage. The `capture-compare` command audits raw input and produces
+matched file selections; image-quality conclusions require the actual stacks.
+
 ## Freeze the input
 
 Record the SHA-256 of the common linear FITS master. Every branch must use that

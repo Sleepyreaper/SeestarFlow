@@ -1,0 +1,9 @@
+{
+  "description": "Template only: enter actual elapsed seconds and reviewed file lists after capture",
+  "blocks": [
+    {"id": "A1", "mount": "eq", "exposure_seconds": 30, "wall_seconds": 900, "source": "blocks/A1", "approved_list": "blocks/A1/approved.lst"},
+    {"id": "B1", "mount": "eq", "exposure_seconds": 60, "wall_seconds": 900, "source": "blocks/B1", "approved_list": "blocks/B1/approved.lst"},
+    {"id": "B2", "mount": "eq", "exposure_seconds": 60, "wall_seconds": 900, "source": "blocks/B2", "approved_list": "blocks/B2/approved.lst"},
+    {"id": "A2", "mount": "eq", "exposure_seconds": 30, "wall_seconds": 900, "source": "blocks/A2", "approved_list": "blocks/A2/approved.lst"}
+  ]
+}

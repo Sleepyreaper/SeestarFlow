@@ -33,13 +33,13 @@ finishing decision.
 | 18 | Stack | Register approved subs and inspect registration yield | Registered sequence |
 | 19 | Stack | Integrate with rejection and preserve a 32-bit linear master | `stack_linear.fit` |
 | 20 | Linear | Crop unstable registration borders only | Cropped master |
-| 21 | Linear | Remove gradients in GraXpert using subtraction; save and inspect the background model | Gradient QA |
-| 22 | Linear | Correct optics conservatively with BlurXTerminator | 100% before/after crop |
-| 23 | Linear | Denoise once with NoiseXTerminator; do not also run GraXpert denoise | Noise-texture QA |
-| 24 | Structure | Optionally separate stars with StarXTerminator | Halo/residual gate |
+| 21 | Linear | Remove gradients with GraXpert, or reserve that job for GradientXTerminator; never stack strong passes blindly | Gradient QA/model |
+| 22 | Linear | Denoise once with NoiseXTerminator; do not also run GraXpert denoise | Noise-texture QA |
+| 23 | Structure | Optionally separate stars early with StarXTerminator; normally skip for clusters | Halo/residual gate |
+| 24 | Structure | Preserve both stars-intact and separated references; derive the stars layer without Unscreen on linear data | Reversible branches |
 | 25 | Tone | Stretch starless and star images independently in Siril | Unclipped black point |
 | 26 | Color | Set neutral background, object color, saturation, and chrominance noise | Color-managed TIFFs |
-| 27 | Finish | Recombine as layers in Photoshop; use masks and restrained local contrast | Layered 16-bit PSD |
+| 27 | Finish | Recombine as layers in Photoshop; use masks, restrained local contrast, and optional masked StarShrink | Layered 16-bit PSD |
 | 28 | Proof | Compare against the linear master at 100%; reject invented texture, halos, and clipped cores | QA contact sheet |
 | 29 | Release | Add creator/copyright metadata and Content Credentials; export web, print, and archive variants | Release manifest |
 | 30 | Archive | Preserve originals, manifest, linear master, layered PSD, recipe, and final exports | Recoverable project |

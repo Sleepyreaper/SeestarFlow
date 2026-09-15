@@ -37,11 +37,18 @@ dominates read noise.
 | 30 seconds | 4 h 10 m | default EQ workhorse |
 | 60 seconds | 8 h 20 m | faint signal under dark, stable EQ conditions |
 
-Longer subs reduce file count and repeated read noise but increase the cost of a
-gust, cloud, satellite, tracking error, or saturated star. Test rather than
-guess: capture 30 frames at each available duration with identical framing and
-filter, then compare keeper rate, FWHM, ellipticity, background, saturation, and
-signal-to-noise per minute.
+Longer subs reduce file count and repeated read noise, but an unusable frame
+loses more time and bright stars can saturate sooner. Satellite trails can often
+be rejected at the pixel level during stacking; a trail does not automatically
+invalidate its whole exposure. Compare equal clock time and equal final stacked
+integration separately, with identical framing and filter. See
+[the EQ and exposure field card](EQ_EXPOSURE_TEST.md) for the timed blocks,
+measurements and executable selection tool.
+
+EQ also reduces field rotation at 10 and 30 seconds. More consistent field
+coverage and less edge cropping can justify the TH10 even when 60 seconds does
+not improve central-image noise at a particular site. Extra filters are not
+required for this benefit.
 
 The official S50 Pro exposure menu adds 60 seconds only in EQ mode. Longer is
 not automatically better: one failed 60-second sub loses six times the photons

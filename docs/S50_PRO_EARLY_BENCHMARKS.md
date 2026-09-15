@@ -37,11 +37,17 @@ If the app stack is attractive in 10–15 minutes but the FITS data is preserved
 ## Preparation checklist while Adobe and RC Astro install
 
 - Install/update the Seestar app to the current production version and sign in.
-- In RC Astro, confirm **NoiseXTerminator**, **BlurXTerminator**, and **StarXTerminator** open normally; do not run them on Monday’s raw FITS individually.
+- In Photoshop, confirm **GradientXTerminator**, **NoiseXTerminator**,
+  **StarXTerminator**, and **StarShrink** open normally. In the stand-alone CLI,
+  confirm the licensed NoiseXTerminator and StarXTerminator tools are available.
+  Do not process individual raw FITS; process the integrated linear master.
 - In Photoshop, create two export presets: `social-watermarked` and `print-unwatermarked`.
 - In Lightroom Classic, create an import preset with copyright metadata, creator name, contact/website, and a `Seestar S50 Pro` keyword.
 - Keep original FITS and 16-bit TIFF masters separate from all JPEG exports.
-- On the first real run, do not use generative fill, AI sky replacement, or fabricated structure in any image described as astrophotography. RC Astro’s denoise/deconvolution/star processing is a finishing tool; the captured photon data remains the source.
+- On the first real run, do not use generative fill, AI sky replacement, or
+  fabricated structure in any image described as astrophotography. RC Astro's
+  gradient, denoise, separation, and star-control tools remain subordinate to
+  the captured photon data.
 
 ## Sources
 

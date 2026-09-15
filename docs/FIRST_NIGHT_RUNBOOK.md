@@ -25,6 +25,13 @@ the primary data position.
 Monday is Alt-Az. The separately shipped TH10 and quick-release plate begin the
 EQ learning phase after the basic telescope is proven.
 
+EQ is part of the intended production setup. After the short first-light stack,
+if a single target has a clear 40-minute window, replace one extended target
+block below with the 10/30-second experiment in [EQ_EXPOSURE_TEST.md](EQ_EXPOSURE_TEST.md).
+When the TH10 arrives, run its 30/60-second EQ experiment and then the separate
+same-exposure mount comparison. These are planned tests, not optional hardware
+benefits we have already dismissed.
+
 ## Before delivery / have ready
 
 - current Seestar app installed and signed into the correct ZWO account;

@@ -1,0 +1,5 @@
+test_id,block_id,target,filter,mount,exposure_seconds,start_iso_with_offset,end_iso_with_offset,wall_seconds,app_accepted_seconds,app_rejected_frames,alignment_residual,app_version,firmware,focus_notes,weather_notes
+eq_exposure,A1,,,eq,30,,,,,,,,,,
+eq_exposure,B1,,,eq,60,,,,,,,,,,
+eq_exposure,B2,,,eq,60,,,,,,,,,,
+eq_exposure,A2,,,eq,30,,,,,,,,,,

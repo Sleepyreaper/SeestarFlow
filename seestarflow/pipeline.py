@@ -269,40 +269,49 @@ def premium_process(
     star_separate: bool = False,
     dry_run: bool = False,
 ) -> tuple[Path, list[list[str]]]:
-    """Apply a conservative RC Astro linear workflow and record exact commands."""
+    """Apply the licensed NXT/SXT linear workflow and record exact commands.
+
+    GradientXTerminator and StarShrink are Photoshop plug-ins and therefore
+    remain documented human decision gates. BlurXTerminator is a separate
+    license and is intentionally not assumed here.
+    """
     executable = find_executable(rc_astro_path, ("rc-astro.exe", "rc-astro"))
     output_dir = linear_path.parent / "rcastro"
     output_dir.mkdir(exist_ok=True)
-    settings = {
-        # (sharpen stars, sharpen nonstellar, denoise). These are deliberately
-        # conservative S50 Pro starting points, not universal prescriptions.
-        "cluster": (0.12, 0.18, 0.35),
-        "galaxy": (0.20, 0.35, 0.45),
-        "nebula": (0.20, 0.32, 0.50),
+    guidance = {
+        "cluster": "Keep stars intact unless a deliberate diagnostic requires separation.",
+        "galaxy": "Inspect the core, H-II knots, and compact background galaxies after SXT.",
+        "nebula": "Star separation is usually useful; stretch the object and stars independently.",
     }
-    sharpen_stars, sharpen_nonstellar, denoise = settings[kind]
-    bxt = output_dir / "bxt_linear.fit"
-    nxt = output_dir / "bxt_nxt_linear.fit"
-    commands = [
-        [executable or "rc-astro", "bxt", str(linear_path), "-o", str(bxt),
-         "--sharpen-stars", str(sharpen_stars), "--sharpen-nonstellar", str(sharpen_nonstellar)],
-        [executable or "rc-astro", "nxt", str(bxt), "-o", str(nxt),
-         "--denoise", str(denoise), "--iterations", "1"],
-    ]
+    commands: list[list[str]] = []
+    denoise_input = linear_path
     if star_separate:
+        starless = output_dir / "starless_linear.fit"
         commands.append([
-            executable or "rc-astro", "sxt", str(nxt), "-o", str(output_dir / "starless_linear.fit"),
-            "--stars",
+            executable or "rc-astro", "sxt", str(linear_path), "-o", str(starless),
+            "--stars", "--unscreen=false",
         ])
+        denoise_input = starless
+    nxt = output_dir / ("starless_nxt_linear.fit" if star_separate else "nxt_linear.fit")
+    commands.append([executable or "rc-astro", "nxt", str(denoise_input), "-o", str(nxt)])
     recipe = {
-        "schema": 1,
+        "schema": 2,
         "input": str(linear_path),
         "input_sha256": sha256(linear_path),
         "stage": "rcastro-linear",
         "kind": kind,
+        "star_separate": star_separate,
         "commands": commands,
         "created_utc": datetime.now(timezone.utc).isoformat(),
-        "notes": "BlurX and NoiseX are conservative defaults; inspect 100% crops before increasing strength.",
+        "notes": (
+            "NoiseXTerminator runs exactly once with its current defaults. "
+            "When requested, StarXTerminator runs first on linear data with Unscreen disabled. "
+            f"{guidance[kind]} Inspect every result at 100%."
+        ),
+        "photoshop_handoff": (
+            "Use GradientXTerminator only as the chosen gradient owner or a proved residual pass; "
+            "use masked StarShrink only after recombination when stars overwhelm a non-stellar subject."
+        ),
     }
     (output_dir / "recipe.json").write_text(json.dumps(recipe, indent=2), encoding="utf-8")
     if not dry_run:
