@@ -37,6 +37,26 @@ StarXTerminator, and StarShrink. BlurXTerminator is not assumed.
 | Reflection/dark nebula | Broadband, dark site | Very cautious or skip | Mild/moderate, once | Sometimes | Rarely | A background model can remove real faint dust |
 | Wide Milky Way | Broadband, dark site | Only with a credible model | Mild, once | No | No | Retain the natural star field and large-scale structure |
 
+### S50 Pro dual-band emission-nebula checkpoint
+
+The first owned S50 Pro NGC 7000 session (342 accepted 10-second frames) gave a
+useful, conservative starting point for this specific target class:
+
+- run StarXTerminator first on linear data with Unscreen disabled, retaining
+  both the stars-intact reference and the separate stars;
+- run NoiseXTerminator on the starless linear object at 0.65 for one iteration;
+- reject 0.90 for two iterations when it makes faint dust look waxy;
+- after independent stretches, begin the separated stars around 40–50% Screen
+  and raise them only if the field looks unnaturally empty;
+- do not automatically follow an accepted GraXpert subtraction with
+  GradientXTerminator. A second broad-gradient pass on NGC 7000 can mistake real
+  large-scale emission for background;
+- reserve StarShrink for a late, visually verified Photoshop pass. Star opacity
+  is the reversible fallback when plug-in automation is unavailable.
+
+This is a measured starting point, not a new universal default. Re-evaluate it
+at 100% for every target and integration depth.
+
 Run the defaults through SeestarFlow:
 
 ```powershell
